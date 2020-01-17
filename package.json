@@ -1,0 +1,32 @@
+{
+  "name": "remarkable-typescript",
+  "version": "1.0.0",
+  "description": "A typescript reMarkable Cloud API",
+  "keywords": [],
+  "author": "Benoît Sepe",
+  "license": "MIT",
+  "scripts": {
+    "start": "ts-node --files src/index.ts",
+    "lint": "eslint src/** --ext .ts,.tsx",
+    "lint:fix": "yarn lint --fix",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.7.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-typescript": "^6.3.1",
+    "eslint-plugin-import": "^2.18.2",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.4"
+  },
+  "dependencies": {
+    "@types/jszip": "^3.1.7",
+    "@types/uuid": "^3.4.6",
+    "getmac": "^5.0.0",
+    "got": "^10.2.2",
+    "hex-lite": "^1.5.0",
+    "jszip": "^3.2.2",
+    "query-string": "^6.9.0",
+    "uuid": "^3.3.3"
+  }
+}
