@@ -1,11 +1,14 @@
 {
   "name": "remarkable-typescript",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A typescript reMarkable Cloud API",
   "keywords": [],
   "author": "Benoît Sepe",
   "license": "MIT",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
   "scripts": {
+    "prepare": "tsc",
     "start": "ts-node --files src/index.ts",
     "lint": "eslint src/** --ext .ts,.tsx",
     "lint:fix": "yarn lint --fix",
