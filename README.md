@@ -1,1 +1,1 @@
-TODO
+Go to https://my.remarkable.com/connect/remarkable to genereate a code

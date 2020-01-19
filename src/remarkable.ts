@@ -77,7 +77,12 @@ export default class Remarkable {
 
   public async refreshToken() {
     if (!this.token) throw new Error('You must register your reMarkable first');
-    const { body } = await this.client.post('https://my.remarkable.com/token/json/2/user/new');
+    const { body }: { body: string } = await got.post('https://my.remarkable.com/token/json/2/user/new', {
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        'User-Agent': `remarkable-typescript/${pkgVersion}`,
+      },
+    });
     this.setToken(body);
     return body;
   }
