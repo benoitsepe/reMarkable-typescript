@@ -30,7 +30,7 @@ const fs = require('fs');
     const client = new Remarkable();
 
     /*
-    * Register your reMarkable. You must do this first to pair your device if you didn't specified a token. This may take a few seconds to complete.
+    * Register your reMarkable. You must do this first to pair your device if you didn't specify a token. This may take a few seconds to complete.
     * Params: { code: string }
     * Returns: token: string
     */
