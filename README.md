@@ -7,9 +7,9 @@ This module is typed for TypeScript, but you can still use JavaScript with it.
 
 ## Installation
 ```bash
-`yarn add remarkable-typescript`
+yarn add remarkable-typescript
 # OR
-`npm install remarkable-typescript`
+npm install remarkable-typescript
 ```
 
 Then, go to [reMarkable's website](https://my.remarkable.com/connect/remarkable) to genereate a code to pair your reMarkable. This code is only available 5 minutes.
