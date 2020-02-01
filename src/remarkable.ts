@@ -157,9 +157,31 @@ export default class Remarkable {
     return body[0].Success;
   }
 
-  public async uploadPDF(name: string, file: Buffer) {
+  public async downloadZip(id: string) {
+    const { BlobURLGet } = await this.getItemWithId(id);
+    if (!BlobURLGet) {
+      throw new Error('Couldn\'t find BlobURLGet in response');
+    }
+
+    const readStream = got.stream(BlobURLGet);
+
+    return new Promise((resolve) => {
+      const chunks: any[] = [];
+
+      readStream.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+
+      // Send the buffer or you can put it into a var
+      readStream.on('end', async () => {
+        const zipBuffer = Buffer.concat(chunks);
+        resolve(zipBuffer);
+      });
+    });
+  }
+
+  public async uploadZip(name: string, ID: string, zipFile: Buffer) {
     const url = `${await this.getStorageUrl()}/document-storage/json/2/upload/request`;
-    const ID = uuidv4();
 
     // First, let's create an upload request
     const { body }: { body: UploadRequestReturnType[] } = await this.client.put(url, {
@@ -173,15 +195,9 @@ export default class Remarkable {
       throw new Error('Error during the creation of the upload request');
     }
 
-    // We create the zip file to get uploaded
-    this.zip.file(`${ID}.content`, JSON.stringify(defaultPDFContent));
-    this.zip.file(`${ID}.pagedata`, []);
-    this.zip.file(`${ID}.pdf`, file);
-    const zipContent = await this.zip.generateAsync({ type: 'nodebuffer' });
-
     // And we upload it
     const { statusCode } = await got.put(body[0].BlobURLPut, {
-      body: zipContent,
+      body: zipFile,
       headers: {
         ...gotConfiguration.headers,
         'Content-Type': '',
@@ -209,5 +225,20 @@ export default class Remarkable {
     }
 
     return bodyUpdateStatus[0].ID;
+  }
+
+  public async uploadPDF(name: string, file: Buffer) {
+    const ID = uuidv4();
+
+    // We create the zip file to get uploaded
+    this.zip.file(`${ID}.content`, JSON.stringify(defaultPDFContent));
+    this.zip.file(`${ID}.pagedata`, []);
+    this.zip.file(`${ID}.pdf`, file);
+    const zipContent = await this.zip.generateAsync({ type: 'nodebuffer' });
+
+    await this.uploadZip(name, ID, zipContent);
+
+    this.zip = new JSZip();
+    return ID;
   }
 }

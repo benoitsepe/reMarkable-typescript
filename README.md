@@ -74,6 +74,13 @@ const fs = require('fs');
     * Returns: id: string
     */
     const pdfUploadedId = await client.uploadPDF('My PDF name', myPDF);
+
+    /*
+    * Download a ZIP file to your reMarkable (with the annotations)
+    * Params: id: string
+    * Returns: Buffer
+    */
+    const zipFile = await client.downloadZip(pdfUploadedId);
 })();
 ```
 
