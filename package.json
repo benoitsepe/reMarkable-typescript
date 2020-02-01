@@ -1,6 +1,6 @@
 {
   "name": "remarkable-typescript",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A typescript reMarkable Cloud API",
   "keywords": [],
   "author": "Benoît Sepe",
