@@ -157,7 +157,7 @@ export default class Remarkable {
     return body[0].Success;
   }
 
-  public async downloadZip(id: string) {
+  public async downloadZip(id: string): Promise<Buffer> {
     const { BlobURLGet } = await this.getItemWithId(id);
     if (!BlobURLGet) {
       throw new Error('Couldn\'t find BlobURLGet in response');
