@@ -40,7 +40,7 @@ const fs = require('fs');
     console.log(deviceToken);
 
     /*
-    * (Re)generate a token from the deviceToken. This token, used to interact with storage, is different from the deviceToken. This function is automatically called in the constructor and in register(). This token expires.
+    * (Re)generate a token from the deviceToken. You MUST call this function after creating the client. This token, used to interact with storage, is different from the deviceToken. This function is automatically called in register(). This token expires.
     * Params: none
     * Returns: token: string
     */

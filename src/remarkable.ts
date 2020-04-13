@@ -50,8 +50,8 @@ type Props = {
 };
 
 export default class Remarkable {
-  private token?: string;
-  private deviceToken?: string;
+  public token?: string;
+  public deviceToken?: string;
   private client: Got = got.extend(gotConfiguration);
   private storageUrl?: string;
   private notificationUrl?: string;
@@ -60,7 +60,6 @@ export default class Remarkable {
   constructor({ deviceToken }: Props = {}) {
     if (deviceToken) {
       this.deviceToken = deviceToken;
-      this.refreshToken();
     }
     this.zip = new JSZip();
   }
@@ -93,6 +92,8 @@ export default class Remarkable {
 
   public async getStorageUrl({ environment = 'production', group = 'auth0|5a68dc51cb30df3877a1d7c4', apiVer = 2 } = {}) {
     if (this.storageUrl) return this.storageUrl;
+    if (!this.token) throw Error('You need to call refreshToken() first');
+
     const body: { Host: string, Status: string} = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/document-storage?environment=${environment}&group=${group}&apiVer=${apiVer}`).json();
     this.storageUrl = `https://${body.Host}`;
     return this.storageUrl;
@@ -100,6 +101,8 @@ export default class Remarkable {
 
   public async getNotificationsUrl({ environment = 'production', group = 'auth0|5a68dc51cb30df3877a1d7c4', apiVer = 1 } = {}) {
     if (this.notificationUrl) return this.notificationUrl;
+    if (!this.token) throw Error('You need to call refreshToken() first');
+
     const body: { Host: string, Status: string} = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/notifications?environment=${environment}&group=${group}&apiVer=${apiVer}`).json();
     this.notificationUrl = `wss://${body.Host}`;
     return this.notificationUrl;
@@ -132,6 +135,7 @@ export default class Remarkable {
   }
 
   private async listItems({ doc, withBlob = true }: { doc?: string, withBlob?: boolean } = {}) {
+    if (!this.token) throw Error('You need to call refreshToken() first');
     const query = {
       doc,
       withBlob,
@@ -163,6 +167,8 @@ export default class Remarkable {
   }
 
   public async downloadZip(id: string): Promise<Buffer> {
+    if (!this.token) throw Error('You need to call refreshToken() first');
+
     const { BlobURLGet } = await this.getItemWithId(id);
     if (!BlobURLGet) {
       throw new Error('Couldn\'t find BlobURLGet in response');
@@ -186,6 +192,8 @@ export default class Remarkable {
   }
 
   public async uploadZip(name: string, ID: string, zipFile: Buffer) {
+    if (!this.token) throw Error('You need to call refreshToken() first');
+
     const url = `${await this.getStorageUrl()}/document-storage/json/2/upload/request`;
 
     // First, let's create an upload request
@@ -233,6 +241,8 @@ export default class Remarkable {
   }
 
   public async uploadPDF(name: string, file: Buffer) {
+    if (!this.token) throw Error('You need to call refreshToken() first');
+
     const ID = uuidv4();
 
     // We create the zip file to get uploaded
