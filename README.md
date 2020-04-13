@@ -40,7 +40,7 @@ const fs = require('fs');
     console.log(deviceToken);
 
     /*
-    * (Re)generate a token from the deviceToken. This token, used to interact with storage, is different from the deviceToken. This function is automatically called when in the constructor and in register(). This token expires.
+    * (Re)generate a token from the deviceToken. This token, used to interact with storage, is different from the deviceToken. This function is automatically called in the constructor and in register(). This token expires.
     * Params: none
     * Returns: token: string
     */
@@ -85,7 +85,7 @@ const fs = require('fs');
     /*
     * Upload a ZIP file to your reMarkable (must be a supported reMarkable format). You can generate the ID using uuidv4.
     * Params: name: string, id: string, zipFile: Buffer
-    * Returns: Buffer
+    * Returns: id: string
     */
     const zipFileId = await client.uploadZip('My document name', ID: 'f831481c-7d2d-4776-922d-36e708d9d680', zipFile);
 })();
