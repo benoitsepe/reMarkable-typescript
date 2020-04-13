@@ -46,18 +46,22 @@ const defaultPDFmetadata = {
 };
 
 type Props = {
-  token?: string;
+  deviceToken?: string;
 };
 
 export default class Remarkable {
   private token?: string;
+  private deviceToken?: string;
   private client: Got = got.extend(gotConfiguration);
   private storageUrl?: string;
   private notificationUrl?: string;
   private zip: JSZip;
 
-  constructor({ token }: Props = {}) {
-    if (token) this.setToken(token);
+  constructor({ deviceToken }: Props = {}) {
+    if (deviceToken) {
+      this.deviceToken = deviceToken;
+      this.refreshToken();
+    }
     this.zip = new JSZip();
   }
 
@@ -76,10 +80,10 @@ export default class Remarkable {
   }
 
   public async refreshToken() {
-    if (!this.token) throw new Error('You must register your reMarkable first');
+    if (!this.deviceToken) throw new Error('You must register your reMarkable first');
     const { body }: { body: string } = await got.post('https://my.remarkable.com/token/json/2/user/new', {
       headers: {
-        Authorization: `Bearer ${this.token}`,
+        Authorization: `Bearer ${this.deviceToken}`,
         'User-Agent': `remarkable-typescript/${pkgVersion}`,
       },
     });
@@ -89,14 +93,14 @@ export default class Remarkable {
 
   public async getStorageUrl({ environment = 'production', group = 'auth0|5a68dc51cb30df3877a1d7c4', apiVer = 2 } = {}) {
     if (this.storageUrl) return this.storageUrl;
-    const { body } = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/document-storage?environment=${environment}&group=${group}&apiVer=${apiVer}`);
+    const body: { Host: string, Status: string} = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/document-storage?environment=${environment}&group=${group}&apiVer=${apiVer}`).json();
     this.storageUrl = `https://${body.Host}`;
     return this.storageUrl;
   }
 
   public async getNotificationsUrl({ environment = 'production', group = 'auth0|5a68dc51cb30df3877a1d7c4', apiVer = 1 } = {}) {
     if (this.notificationUrl) return this.notificationUrl;
-    const { body } = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/notifications?environment=${environment}&group=${group}&apiVer=${apiVer}`);
+    const body: { Host: string, Status: string} = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/notifications?environment=${environment}&group=${group}&apiVer=${apiVer}`).json();
     this.notificationUrl = `wss://${body.Host}`;
     return this.notificationUrl;
   }
@@ -120,9 +124,10 @@ export default class Remarkable {
     return got.post('https://my.remarkable.com/token/json/2/device/new', {
       json: { code, deviceDesc, deviceId: deviceId || generateDeviceId() },
     })
-      .then(({ body }) => {
-        this.setToken(body);
-        return this.refreshToken();
+      .then(async ({ body }) => {
+        this.deviceToken = body;
+        await this.refreshToken();
+        return body;
       });
   }
 
