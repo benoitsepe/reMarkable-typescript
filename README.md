@@ -24,27 +24,27 @@ const fs = require('fs');
 (async () => {
     /*
     * Create the reMarkable client
-    * Params: { token?: string }
+    * Params: { deviceToken?: string }
     * Returns: client: Remarkable
     */
     const client = new Remarkable();
 
     /*
-    * Register your reMarkable. You must do this first to pair your device if you didn't specify a token. This may take a few seconds to complete.
+    * Register your reMarkable and generate a device token. You must do this first to pair your device if you didn't specify a token. This may take a few seconds to complete. It seems that the deviceToken never expires.
     * Params: { code: string }
-    * Returns: token: string
+    * Returns: deviceToken: string
     */
-    const token = await client.register({ code: 'created code' });
+    const deviceToken = await client.register({ code: 'created code' });
 
-    // (optional) skip registration in the future with `new Remarkable({token})`
-    console.log(token);
+    // (optional) skip registration in the future with `new Remarkable({deviceToken})`
+    console.log(deviceToken);
 
     /*
-    * Refresh the token. For now, the token does not expire but this may change in the future
+    * (Re)generate a token from the deviceToken. This token, used to interact with storage, is different from the deviceToken. This function is automatically called when in the constructor and in register(). This token expires.
     * Params: none
     * Returns: token: string
     */
-    const newToken = await client.refreshToken();
+    await client.refreshToken();
 
     /*
     * List all items, files and folders.
@@ -81,6 +81,13 @@ const fs = require('fs');
     * Returns: Buffer
     */
     const zipFile = await client.downloadZip(pdfUploadedId);
+
+    /*
+    * Upload a ZIP file to your reMarkable (must be a supported reMarkable format). You can generate the ID using uuidv4.
+    * Params: name: string, id: string, zipFile: Buffer
+    * Returns: Buffer
+    */
+    const zipFileId = await client.uploadZip('My document name', ID: 'f831481c-7d2d-4776-922d-36e708d9d680', zipFile);
 })();
 ```
 
