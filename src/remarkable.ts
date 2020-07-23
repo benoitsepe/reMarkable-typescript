@@ -1,16 +1,14 @@
 import got, { Got, ExtendOptions } from 'got';
 import os from 'os';
 import queryString from 'query-string';
-import uuidv5 from 'uuid/v5'; // Namespace UUID
-import uuidv4 from 'uuid/v4'; // Random UUID
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid'; // Namespace UUID
 import { toUint8Array } from 'hex-lite';
 import getMac from 'getmac';
 import JSZip from 'jszip';
 
 import { version as pkgVersion } from '../package.json';
-import {
-  ItemResponse, ReturnType, ItemType, UploadRequestReturnType,
-} from './types';
+import { ItemResponse, ReturnType, ItemType, UploadRequestReturnType } from './types';
+import { generateDeviceId } from './utils';
 
 const gotConfiguration: ExtendOptions = {
   responseType: 'json',
@@ -62,7 +60,7 @@ type Props = {
 export default class Remarkable {
   public token?: string;
   public deviceToken?: string;
-  private client: Got = got.extend(gotConfiguration);
+  private gotClient: Got = got.extend(gotConfiguration);
   private storageUrl?: string;
   private notificationUrl?: string;
   private zip: JSZip;
@@ -75,22 +73,20 @@ export default class Remarkable {
   }
 
   private setToken(token: string) {
-    this.client = got.extend(
-      {
-        ...gotConfiguration,
-        headers: {
-          ...gotConfiguration.headers,
-          Authorization: `Bearer ${token}`,
-        },
+    this.gotClient = got.extend({
+      ...gotConfiguration,
+      headers: {
+        ...gotConfiguration.headers,
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
     this.token = token;
     return token;
   }
 
   public async refreshToken() {
     if (!this.deviceToken) throw new Error('You must register your reMarkable first');
-    const { body }: { body: string } = await got.post('https://my.remarkable.com/token/json/2/user/new', {
+    const { body } = await got.post<string>('https://my.remarkable.com/token/json/2/user/new', {
       headers: {
         Authorization: `Bearer ${this.deviceToken}`,
         'User-Agent': `remarkable-typescript/${pkgVersion}`,
@@ -100,43 +96,58 @@ export default class Remarkable {
     return body;
   }
 
-  public async getStorageUrl({ environment = 'production', group = 'auth0|5a68dc51cb30df3877a1d7c4', apiVer = 2 } = {}) {
+  public async getStorageUrl({
+    environment = 'production',
+    group = 'auth0|5a68dc51cb30df3877a1d7c4',
+    apiVer = 2,
+  } = {}) {
     if (this.storageUrl) return this.storageUrl;
     if (!this.token) throw Error('You need to call refreshToken() first');
 
-    const body: { Host: string, Status: string} = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/document-storage?environment=${environment}&group=${group}&apiVer=${apiVer}`).json();
+    const body: { Host: string; Status: string } = await this.gotClient
+      .get(
+        `https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/document-storage?environment=${environment}&group=${group}&apiVer=${apiVer}`,
+      )
+      .json();
     this.storageUrl = `https://${body.Host}`;
     return this.storageUrl;
   }
 
-  public async getNotificationsUrl({ environment = 'production', group = 'auth0|5a68dc51cb30df3877a1d7c4', apiVer = 1 } = {}) {
+  public async getNotificationsUrl({
+    environment = 'production',
+    group = 'auth0|5a68dc51cb30df3877a1d7c4',
+    apiVer = 1,
+  } = {}) {
     if (this.notificationUrl) return this.notificationUrl;
     if (!this.token) throw Error('You need to call refreshToken() first');
 
-    const body: { Host: string, Status: string} = await this.client.get(`https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/notifications?environment=${environment}&group=${group}&apiVer=${apiVer}`).json();
+    const body: { Host: string; Status: string } = await this.gotClient
+      .get(
+        `https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/notifications?environment=${environment}&group=${group}&apiVer=${apiVer}`,
+      )
+      .json();
     this.notificationUrl = `wss://${body.Host}`;
     return this.notificationUrl;
   }
 
-  public async register({ code, deviceDesc = 'desktop-windows', deviceId }: {code: string, deviceDesc?: string, deviceId?: string}) {
+  public async register({
+    code,
+    deviceDesc = 'desktop-windows',
+    deviceId = generateDeviceId(),
+  }: {
+    code: string;
+    deviceDesc?: string;
+    deviceId?: string;
+  }) {
     if (!code) {
       throw new Error('Must provide a code from https://my.remarkable.com/connect/desktop');
     }
 
-    // Generate a deviceId that remains constant for this user on this machine
-    const generateDeviceId = () => {
-      const fingerprint = os.platform() + os.arch() + os.hostname() + os.cpus()[0].model;
-      const namespace = new Array(10)
-        .fill(0)
-        .concat(
-          ...toUint8Array(getMac().replace(/:/g, '')),
-        );
-      return uuidv5(fingerprint, namespace);
-    };
     // Make request
-    return got.post('https://my.remarkable.com/token/json/2/device/new', {
-      json: { code, deviceDesc, deviceId: deviceId || generateDeviceId() },
-    })
+    return got
+      .post('https://my.remarkable.com/token/json/2/device/new', {
+        json: { code, deviceDesc, deviceId },
+      })
       .then(async ({ body }) => {
         this.deviceToken = body;
         await this.refreshToken();
@@ -144,7 +155,7 @@ export default class Remarkable {
       });
   }
 
-  private async listItems({ doc, withBlob = true }: { doc?: string, withBlob?: boolean } = {}) {
+  private async listItems({ doc, withBlob = true }: { doc?: string; withBlob?: boolean } = {}) {
     if (!this.token) throw Error('You need to call refreshToken() first');
     const query = {
       doc,
@@ -153,7 +164,7 @@ export default class Remarkable {
     const stringifiedQuery = queryString.stringify(query);
     const url = `${await this.getStorageUrl()}/document-storage/json/2/docs?${stringifiedQuery}`;
 
-    const { body }: { body: ItemResponse[] } = await this.client.get(url);
+    const { body } = await this.gotClient.get<ItemResponse[]>(url);
     return body;
   }
 
@@ -167,11 +178,13 @@ export default class Remarkable {
 
   public async deleteItem(id: string, version: number) {
     const url = `${await this.getStorageUrl()}/document-storage/json/2/delete`;
-    const { body }: {body: ReturnType[]} = await this.client.put(url, {
-      json: [{
-        ID: id,
-        Version: version,
-      }],
+    const { body } = await this.gotClient.put<ReturnType[]>(url, {
+      json: [
+        {
+          ID: id,
+          Version: version,
+        },
+      ],
     });
     return body[0].Success;
   }
@@ -181,7 +194,7 @@ export default class Remarkable {
 
     const { BlobURLGet } = await this.getItemWithId(id);
     if (!BlobURLGet) {
-      throw new Error('Couldn\'t find BlobURLGet in response');
+      throw new Error("Couldn't find BlobURLGet in response");
     }
 
     const readStream = got.stream(BlobURLGet);
@@ -207,12 +220,14 @@ export default class Remarkable {
     const url = `${await this.getStorageUrl()}/document-storage/json/2/upload/request`;
 
     // First, let's create an upload request
-    const { body }: { body: UploadRequestReturnType[] } = await this.client.put(url, {
-      json: [{
-        ID,
-        Type: ItemType.DocumentType,
-        Version: 1,
-      }],
+    const { body } = await this.gotClient.put<UploadRequestReturnType[]>(url, {
+      json: [
+        {
+          ID,
+          Type: ItemType.DocumentType,
+          Version: 1,
+        },
+      ],
     });
     if (!body[0].Success || !body[0].BlobURLPut) {
       console.warn('upload zip response: ', body[0]);
@@ -240,15 +255,20 @@ export default class Remarkable {
     }
 
     // Then we update the metadata
-    const { body: bodyUpdateStatus }: { body: ReturnType[] } = await this.client.put(`${await this.getStorageUrl()}/document-storage/json/2/upload/update-status`, {
-      json: [{
-        ...docMetaData,
-        ID,
-        VissibleName: name,
-        lastModified: new Date().toISOString(),
-        ModifiedClient: new Date().toISOString(),
-      }],
-    });
+    const { body: bodyUpdateStatus } = await this.gotClient.put<ReturnType[]>(
+      `${await this.getStorageUrl()}/document-storage/json/2/upload/update-status`,
+      {
+        json: [
+          {
+            ...defaultPDFmetadata,
+            ID,
+            VissibleName: name,
+            lastModified: new Date().toISOString(),
+            ModifiedClient: new Date().toISOString(),
+          },
+        ],
+      },
+    );
 
     if (!bodyUpdateStatus[0].Success) {
       throw new Error('Error during the update status of the metadata');
