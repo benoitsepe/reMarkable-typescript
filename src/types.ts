@@ -15,7 +15,7 @@ export type ItemResponse = {
 
 export enum ItemType {
   DocumentType='DocumentType',
-  CollectionType='CollectionTyp',
+  CollectionType='CollectionType',
 }
 
 export type ReturnType = {
