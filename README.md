@@ -88,6 +88,21 @@ const fs = require('fs');
     * Returns: id: string
     */
     const zipFileId = await client.uploadZip('My document name', ID: 'f831481c-7d2d-4776-922d-36e708d9d680', zipFile);
+
+    /*
+    * Upload an ePub file to your reMarkable (must be a supported reMarkable format). You can generate the ID using uuidv4 or v5. v5 will deterministically generate a uuid based on name and namespace .
+    * Params: name: string, id: string, epubFileBuffer: Buffer, parent?: string
+    * Returns: id: string
+    */
+    const epubDocId = await client.uploadEPUB('name of ePub document', ID: '181a124b-bbdf-4fdd-8310-64fa87bc9c7f', epubFileBuffer, /*optional UUID of parent folder*/);
+
+    /*
+    * Create a directory 
+    * Params: name: string, id: string, epubFileBuffer: Buffer, parent?: string
+    * Returns: id: string
+    */
+    const directoryId = await client.createDirectory('testDir2', id, ID: '702ba145-0a78-4e19-9324-6f8fb3da3c1a', /*optional UUID of parent folder*/);
+
 })();
 ```
 

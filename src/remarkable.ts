@@ -12,7 +12,6 @@ import {
   ItemResponse, ReturnType, ItemType, UploadRequestReturnType,
 } from './types';
 
-
 const gotConfiguration: ExtendOptions = {
   responseType: 'json',
   headers: {
@@ -26,6 +25,17 @@ const defaultPDFContent = {
   lastOpenedPage: 0,
   lineHeight: -1,
   margins: 180,
+  pageCount: 0,
+  textScale: 1,
+  transform: {},
+};
+
+const defaultEPUBContent = {
+  extraMetadata: {},
+  fileType: 'epub',
+  lastOpenedPage: 0,
+  lineHeight: -1,
+  margins: 100,
   pageCount: 0,
   textScale: 1,
   transform: {},
@@ -191,7 +201,7 @@ export default class Remarkable {
     });
   }
 
-  public async uploadZip(name: string, ID: string, zipFile: Buffer) {
+  public async uploadZip(name: string, ID: string, zipFile: Buffer, parent?: string) {
     if (!this.token) throw Error('You need to call refreshToken() first');
 
     const url = `${await this.getStorageUrl()}/document-storage/json/2/upload/request`;
@@ -205,6 +215,7 @@ export default class Remarkable {
       }],
     });
     if (!body[0].Success || !body[0].BlobURLPut) {
+      console.warn('upload zip response: ', body[0]);
       throw new Error('Error during the creation of the upload request');
     }
 
@@ -222,10 +233,16 @@ export default class Remarkable {
       throw new Error('Error during the upload of the document');
     }
 
+    // set metadata properties of the doc to create
+    const docMetaData = { ...defaultPDFmetadata };
+    if (parent) {
+      docMetaData.parent = parent;
+    }
+
     // Then we update the metadata
     const { body: bodyUpdateStatus }: { body: ReturnType[] } = await this.client.put(`${await this.getStorageUrl()}/document-storage/json/2/upload/update-status`, {
       json: [{
-        ...defaultPDFmetadata,
+        ...docMetaData,
         ID,
         VissibleName: name,
         lastModified: new Date().toISOString(),
@@ -255,5 +272,99 @@ export default class Remarkable {
 
     this.zip = new JSZip();
     return ID;
+  }
+
+  public async uploadEPUB(
+    name: string,
+    id: string,
+    file: Buffer,
+    parent?: string,
+  ) {
+    if (!this.token) throw Error('You need to call refreshToken() first');
+
+    // We create the zip file to get uploaded
+    this.zip.file(`${id}.content`, JSON.stringify(defaultEPUBContent));
+    this.zip.file(`${id}.pagedata`, []);
+    this.zip.file(`${id}.epub`, file);
+    const zipContent = await this.zip.generateAsync({ type: 'nodebuffer' });
+
+    await this.uploadZip(name, id, zipContent, parent);
+
+    this.zip = new JSZip();
+    return id;
+  }
+
+  public async createDirectory(name: string, ID: string, parent?: string) {
+    // to create a directory we just make a file with no content
+    this.zip.file(`${ID}.content`, '{}');
+    const zipContent = await this.zip.generateAsync({ type: 'nodebuffer' });
+
+    if (!this.token) throw Error('You need to call refreshToken() first');
+
+    const url = `${await this.getStorageUrl()}/document-storage/json/2/upload/request`;
+
+    // create an upload request for ItemType collection
+    const { body }: { body: UploadRequestReturnType[] } = await this.client.put(
+      url,
+      {
+        json: [
+          {
+            ID,
+            Type: ItemType.CollectionType,
+            Version: 1,
+          },
+        ],
+      },
+    );
+    if (!body[0].Success || !body[0].BlobURLPut) {
+      console.warn('Create directory response: ', body[0]);
+      throw new Error('Error during the creation of the upload request');
+    }
+
+    // And we upload it
+    const { statusCode } = await got.put(body[0].BlobURLPut, {
+      body: zipContent,
+      headers: {
+        ...gotConfiguration.headers,
+        'Content-Type': '',
+        Authorization: `Bearer ${this.token}`,
+      },
+    });
+
+    if (statusCode !== 200) {
+      throw new Error('Error during the upload of the document');
+    }
+
+    // set metadata properties of the folder to create
+    const folderMetadata = { ...defaultPDFmetadata };
+    folderMetadata.type = ItemType.CollectionType;
+    folderMetadata.VissibleName = name;
+    if (parent) {
+      folderMetadata.parent = parent;
+    }
+
+    // Then we update the metadata
+    const {
+      body: bodyUpdateStatus,
+    }: { body: ReturnType[] } = await this.client.put(
+      `${await this.getStorageUrl()}/document-storage/json/2/upload/update-status`,
+      {
+        json: [
+          {
+            ...folderMetadata,
+            ID,
+            VissibleName: name,
+            lastModified: new Date().toISOString(),
+            ModifiedClient: new Date().toISOString(),
+          },
+        ],
+      },
+    );
+
+    if (!bodyUpdateStatus[0].Success) {
+      throw new Error('Error during the update status of the metadata');
+    }
+
+    return bodyUpdateStatus[0].ID;
   }
 }
