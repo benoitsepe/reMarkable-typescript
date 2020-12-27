@@ -1,9 +1,6 @@
 import got, { Got, ExtendOptions } from 'got';
-import os from 'os';
 import queryString from 'query-string';
-import { v4 as uuidv4, v5 as uuidv5 } from 'uuid'; // Namespace UUID
-import { toUint8Array } from 'hex-lite';
-import getMac from 'getmac';
+import { v4 as uuidv4 } from 'uuid'; // Namespace UUID
 import JSZip from 'jszip';
 
 import { version as pkgVersion } from '../package.json';
@@ -84,7 +81,7 @@ export default class Remarkable {
     return token;
   }
 
-  public async refreshToken() {
+  public async refreshToken(): Promise<string> {
     if (!this.deviceToken) throw new Error('You must register your reMarkable first');
     const { body } = await got.post<string>('https://my.remarkable.com/token/json/2/user/new', {
       headers: {
@@ -100,15 +97,13 @@ export default class Remarkable {
     environment = 'production',
     group = 'auth0|5a68dc51cb30df3877a1d7c4',
     apiVer = 2,
-  } = {}) {
+  } = {}): Promise<string> {
     if (this.storageUrl) return this.storageUrl;
     if (!this.token) throw Error('You need to call refreshToken() first');
 
-    const body: { Host: string; Status: string } = await this.gotClient
-      .get(
-        `https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/document-storage?environment=${environment}&group=${group}&apiVer=${apiVer}`,
-      )
-      .json();
+    const { body } = await this.gotClient.get<{ Host: string; Status: string }>(
+      `https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/document-storage?environment=${environment}&group=${group}&apiVer=${apiVer}`,
+    );
     this.storageUrl = `https://${body.Host}`;
     return this.storageUrl;
   }
@@ -117,15 +112,13 @@ export default class Remarkable {
     environment = 'production',
     group = 'auth0|5a68dc51cb30df3877a1d7c4',
     apiVer = 1,
-  } = {}) {
+  } = {}): Promise<string> {
     if (this.notificationUrl) return this.notificationUrl;
     if (!this.token) throw Error('You need to call refreshToken() first');
 
-    const body: { Host: string; Status: string } = await this.gotClient
-      .get(
-        `https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/notifications?environment=${environment}&group=${group}&apiVer=${apiVer}`,
-      )
-      .json();
+    const { body } = await this.gotClient.get<{ Host: string; Status: string }>(
+      `https://service-manager-production-dot-remarkable-production.appspot.com/service/json/1/notifications?environment=${environment}&group=${group}&apiVer=${apiVer}`,
+    );
     this.notificationUrl = `wss://${body.Host}`;
     return this.notificationUrl;
   }
@@ -138,7 +131,7 @@ export default class Remarkable {
     code: string;
     deviceDesc?: string;
     deviceId?: string;
-  }) {
+  }): Promise<string> {
     if (!code) {
       throw new Error('Must provide a code from https://my.remarkable.com/connect/desktop');
     }
@@ -155,7 +148,9 @@ export default class Remarkable {
       });
   }
 
-  private async listItems({ doc, withBlob = true }: { doc?: string; withBlob?: boolean } = {}) {
+  private async listItems({ doc, withBlob = true }: { doc?: string; withBlob?: boolean } = {}): Promise<
+    ItemResponse[]
+  > {
     if (!this.token) throw Error('You need to call refreshToken() first');
     const query = {
       doc,
@@ -168,15 +163,15 @@ export default class Remarkable {
     return body;
   }
 
-  public async getItemWithId(id: string) {
+  public async getItemWithId(id: string): Promise<ItemResponse> {
     return (await this.listItems({ doc: id }))[0];
   }
 
-  public async getAllItems() {
+  public async getAllItems(): Promise<ItemResponse[]> {
     return this.listItems();
   }
 
-  public async deleteItem(id: string, version: number) {
+  public async deleteItem(id: string, version: number): Promise<boolean> {
     const url = `${await this.getStorageUrl()}/document-storage/json/2/delete`;
     const { body } = await this.gotClient.put<ReturnType[]>(url, {
       json: [
@@ -200,9 +195,9 @@ export default class Remarkable {
     const readStream = got.stream(BlobURLGet);
 
     return new Promise((resolve) => {
-      const chunks: any[] = [];
+      const chunks: Uint8Array[] = [];
 
-      readStream.on('data', (chunk) => {
+      readStream.on('data', (chunk: Uint8Array) => {
         chunks.push(chunk);
       });
 
@@ -214,7 +209,7 @@ export default class Remarkable {
     });
   }
 
-  public async uploadZip(name: string, ID: string, zipFile: Buffer, parent?: string) {
+  public async uploadZip(name: string, ID: string, zipFile: Buffer, parent?: string): Promise<string> {
     if (!this.token) throw Error('You need to call refreshToken() first');
 
     const url = `${await this.getStorageUrl()}/document-storage/json/2/upload/request`;
@@ -277,7 +272,7 @@ export default class Remarkable {
     return bodyUpdateStatus[0].ID;
   }
 
-  public async uploadPDF(name: string, file: Buffer) {
+  public async uploadPDF(name: string, file: Buffer): Promise<string> {
     if (!this.token) throw Error('You need to call refreshToken() first');
 
     const ID = uuidv4();
@@ -294,12 +289,7 @@ export default class Remarkable {
     return ID;
   }
 
-  public async uploadEPUB(
-    name: string,
-    id: string,
-    file: Buffer,
-    parent?: string,
-  ) {
+  public async uploadEPUB(name: string, id: string, file: Buffer, parent?: string): Promise<string> {
     if (!this.token) throw Error('You need to call refreshToken() first');
 
     // We create the zip file to get uploaded
@@ -314,7 +304,7 @@ export default class Remarkable {
     return id;
   }
 
-  public async createDirectory(name: string, ID: string, parent?: string) {
+  public async createDirectory(name: string, ID: string, parent?: string): Promise<string> {
     // to create a directory we just make a file with no content
     this.zip.file(`${ID}.content`, '{}');
     const zipContent = await this.zip.generateAsync({ type: 'nodebuffer' });
@@ -324,18 +314,15 @@ export default class Remarkable {
     const url = `${await this.getStorageUrl()}/document-storage/json/2/upload/request`;
 
     // create an upload request for ItemType collection
-    const { body }: { body: UploadRequestReturnType[] } = await this.client.put(
-      url,
-      {
-        json: [
-          {
-            ID,
-            Type: ItemType.CollectionType,
-            Version: 1,
-          },
-        ],
-      },
-    );
+    const { body } = await this.gotClient.put<UploadRequestReturnType[]>(url, {
+      json: [
+        {
+          ID,
+          Type: ItemType.CollectionType,
+          Version: 1,
+        },
+      ],
+    });
     if (!body[0].Success || !body[0].BlobURLPut) {
       console.warn('Create directory response: ', body[0]);
       throw new Error('Error during the creation of the upload request');
@@ -364,9 +351,7 @@ export default class Remarkable {
     }
 
     // Then we update the metadata
-    const {
-      body: bodyUpdateStatus,
-    }: { body: ReturnType[] } = await this.client.put(
+    const { body: bodyUpdateStatus } = await this.gotClient.put<ReturnType[]>(
       `${await this.getStorageUrl()}/document-storage/json/2/upload/update-status`,
       {
         json: [

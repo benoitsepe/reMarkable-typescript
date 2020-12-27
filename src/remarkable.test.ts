@@ -85,7 +85,8 @@ describe('Get items', () => {
     await client.refreshToken();
 
     const itemsToBeFetched = [generateItemResponse(), generateItemResponse()];
-    localSandbox.stub((client as any).gotClient, 'get').resolves(Promise.resolve(itemsToBeFetched));
+    localSandbox.stub((client as any).gotClient, 'get').resolves(Promise.resolve({ body: itemsToBeFetched }));
+    localSandbox.stub(client, 'getStorageUrl').resolves(await Promise.resolve('http://localhost'));
 
     const results = await client.getAllItems();
     expect(results).to.be.equal(itemsToBeFetched);
