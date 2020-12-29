@@ -245,6 +245,7 @@ export default class Remarkable {
 
     // set metadata properties of the doc to create
     const docMetaData = { ...defaultPDFmetadata };
+    //If we would like the document to be in a folder the parent property of docuMetaData must be set
     if (parent) {
       docMetaData.parent = parent;
     }
@@ -255,7 +256,7 @@ export default class Remarkable {
       {
         json: [
           {
-            ...defaultPDFmetadata,
+            ...docMetaData,
             ID,
             VissibleName: name,
             lastModified: new Date().toISOString(),
@@ -289,7 +290,14 @@ export default class Remarkable {
     return ID;
   }
 
-  public async uploadEPUB(name: string, id: string, file: Buffer, parent?: string): Promise<string> {
+  /**
+   *
+   * @param name the display name for the document
+   * @param id uuid string that identifies the document
+   * @param file the file data we would like to upload
+   * @param parentId (optional) if the document should belong to a folder the uuid of the folder must be specified
+   */
+  public async uploadEPUB(name: string, id: string, file: Buffer, parentId?: string): Promise<string> {
     if (!this.token) throw Error('You need to call refreshToken() first');
 
     // We create the zip file to get uploaded
@@ -298,7 +306,7 @@ export default class Remarkable {
     this.zip.file(`${id}.epub`, file);
     const zipContent = await this.zip.generateAsync({ type: 'nodebuffer' });
 
-    await this.uploadZip(name, id, zipContent, parent);
+    await this.uploadZip(name, id, zipContent, parentId);
 
     this.zip = new JSZip();
     return id;
