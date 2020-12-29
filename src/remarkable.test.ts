@@ -1,14 +1,11 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import got from 'got';
 import { describe, it } from 'mocha';
 import sinon from 'sinon';
 import sinonStubPromise from 'sinon-stub-promise';
-
-import got from 'got';
-
-import Remarkable from './remarkable';
-
 import { generateItemResponse } from './fixtures';
+import Remarkable from './remarkable';
 
 chai.use(chaiAsPromised);
 sinonStubPromise(sinon);
@@ -90,5 +87,48 @@ describe('Get items', () => {
 
     const results = await client.getAllItems();
     expect(results).to.be.equal(itemsToBeFetched);
+  });
+});
+
+describe('Upload Zip', async function () {
+  it('passes the correct parameters to remarkable API', async function () {
+    // SETUP
+    localSandbox.stub(got, 'post').resolves(
+      Promise.resolve({
+        body: 'token',
+      }),
+    );
+    const client = new Remarkable({
+      deviceToken: 'stubToken',
+    });
+    await client.refreshToken();
+    // configure stubbing for calls to the document apis
+    const mockFileId = 'b8710f71-c86e-5037-8ef2-bac047709355';
+    const mockFolderId = '71e70cd9-8d72-5c8b-addc-0d18c74364bc';
+    const putStub = localSandbox
+      .stub((client as any).gotClient, 'put')
+      .resolves(Promise.resolve({ body: [{ Success: true, BlobURLPut: 'someURL' }] }))
+      .onSecondCall()
+      .resolves(Promise.resolve({ body: [{ Success: true, ID: mockFileId }] }));
+
+    localSandbox.stub(client, 'getStorageUrl').resolves(await Promise.resolve('http://localhost'));
+
+    localSandbox.stub(got, 'put').resolves(
+      Promise.resolve({
+        statusCode: 200,
+        body: mockFileId,
+      }),
+    );
+
+    const testEpub = Buffer.from('oogabooga');
+    // ACT
+    await client.uploadZip('testID', mockFileId, testEpub, mockFolderId);
+    // ASSERT
+    const argsToRmAPI = putStub.getCall(1).args[1];
+    const unwrappedArgs = argsToRmAPI.json[0];
+    expect(unwrappedArgs.parent).to.be.equal(mockFolderId);
+    expect(unwrappedArgs.ID).to.be.equal(mockFileId);
+    expect(unwrappedArgs.VissibleName).to.be.equal('testID');
+    return;
   });
 });
