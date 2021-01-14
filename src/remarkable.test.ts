@@ -128,7 +128,7 @@ describe('Upload Zip', async function () {
     const unwrappedArgs = argsToRmAPI.json[0];
     expect(unwrappedArgs.parent).to.be.equal(mockFolderId);
     expect(unwrappedArgs.ID).to.be.equal(mockFileId);
-    expect(unwrappedArgs.VissibleName).to.be.equal('testID');
+    expect(unwrappedArgs.VisibleName).to.be.equal('testID');
     return;
   });
 });

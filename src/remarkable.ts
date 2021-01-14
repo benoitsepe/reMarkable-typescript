@@ -47,7 +47,7 @@ const defaultPDFmetadata = {
   synced: true,
   type: ItemType.DocumentType,
   version: 1,
-  VissibleName: 'New Document',
+  VisibleName: 'New Document',
 };
 
 type Props = {
@@ -258,7 +258,7 @@ export default class Remarkable {
           {
             ...docMetaData,
             ID,
-            VissibleName: name,
+            VisibleName: name,
             lastModified: new Date().toISOString(),
             ModifiedClient: new Date().toISOString(),
           },
@@ -366,7 +366,7 @@ export default class Remarkable {
           {
             ...folderMetadata,
             ID,
-            VissibleName: name,
+            VisibleName: name,
             lastModified: new Date().toISOString(),
             ModifiedClient: new Date().toISOString(),
           },

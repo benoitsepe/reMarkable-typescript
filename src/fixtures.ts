@@ -11,7 +11,7 @@ export const generateItemResponse = (partial?: Partial<ItemResponse>): ItemRespo
   BlobURLGetExpires: '1595257974',
   ModifiedClient: 'client',
   Type: ItemType.DocumentType,
-  VissibleName: 'name',
+  VisibleName: 'name',
   CurrentPage: 1,
   Bookmarked: false,
   Parent: '',

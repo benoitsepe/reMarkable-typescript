@@ -7,7 +7,7 @@ export type ItemResponse = {
   BlobURLGetExpires?: string,
   ModifiedClient: string,
   Type: ItemType,
-  VissibleName: string,
+  VisibleName: string,
   CurrentPage: number,
   Bookmarked: boolean,
   Parent: string,
