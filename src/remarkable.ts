@@ -273,21 +273,26 @@ export default class Remarkable {
     return bodyUpdateStatus[0].ID;
   }
 
-  public async uploadPDF(name: string, file: Buffer): Promise<string> {
+  /**
+   *
+   * @param name the display name for the document
+   * @param id uuid string that identifies the document
+   * @param file the file data we would like to upload
+   * @param parentId (optional) if the document should belong to a folder the uuid of the folder must be specified
+   */
+  public async uploadPDF(name: string, id: string, file: Buffer, parentId?: string): Promise<string> {
     if (!this.token) throw Error('You need to call refreshToken() first');
 
-    const ID = uuidv4();
-
     // We create the zip file to get uploaded
-    this.zip.file(`${ID}.content`, JSON.stringify(defaultPDFContent));
-    this.zip.file(`${ID}.pagedata`, []);
-    this.zip.file(`${ID}.pdf`, file);
+    this.zip.file(`${id}.content`, JSON.stringify(defaultPDFContent));
+    this.zip.file(`${id}.pagedata`, []);
+    this.zip.file(`${id}.pdf`, file);
     const zipContent = await this.zip.generateAsync({ type: 'nodebuffer' });
 
-    await this.uploadZip(name, ID, zipContent);
+    await this.uploadZip(name, id, zipContent, parentId);
 
     this.zip = new JSZip();
-    return ID;
+    return id;
   }
 
   /**
