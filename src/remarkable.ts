@@ -148,7 +148,7 @@ export default class Remarkable {
       });
   }
 
-  private async listItems({ doc, withBlob = true }: { doc?: string; withBlob?: boolean } = {}): Promise<
+  public async listItems({ doc, withBlob = true }: { doc?: string; withBlob?: boolean } = {}): Promise<
     ItemResponse[]
   > {
     if (!this.token) throw Error('You need to call refreshToken() first');
