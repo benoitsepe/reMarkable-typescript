@@ -6,6 +6,7 @@ Unofficial reMarkable api wrapper for node.js based on [these unofficial docs](h
 This module is typed for TypeScript, but you can still use JavaScript with it.
 
 ## Installation
+
 ```bash
 yarn add remarkable-typescript
 # OR
@@ -73,7 +74,7 @@ const fs = require('fs');
     * Params: name: string, file: Buffer
     * Returns: id: string
     */
-    const pdfUploadedId = await client.uploadPDF('My PDF name', myPDF);
+    const pdfUploadedId = await client.uploadPDF('name of PDF document', ID: '181a124b-bbdf-4fdd-8310-64fa87bc9c7f', pdfFileBuffer, /*optional UUID of parent folder*/);
 
     /*
     * Download a ZIP file to your reMarkable (with the annotations)
@@ -97,7 +98,7 @@ const fs = require('fs');
     const epubDocId = await client.uploadEPUB('name of ePub document', ID: '181a124b-bbdf-4fdd-8310-64fa87bc9c7f', epubFileBuffer, /*optional UUID of parent folder*/);
 
     /*
-    * Create a directory 
+    * Create a directory
     * Params: name: string, id: string, epubFileBuffer: Buffer, parent?: string
     * Returns: id: string
     */
@@ -107,7 +108,5 @@ const fs = require('fs');
 ```
 
 ## License
+
 MIT
-
-
-
