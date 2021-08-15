@@ -83,7 +83,7 @@ export default class Remarkable {
 
   public async refreshToken(): Promise<string> {
     if (!this.deviceToken) throw new Error('You must register your reMarkable first');
-    const { body } = await got.post<string>('https://my.remarkable.com/token/json/2/user/new', {
+    const { body } = await got.post<string>('https://webapp-production-dot-remarkable-production.appspot.com/token/json/2/user/new', {
       headers: {
         Authorization: `Bearer ${this.deviceToken}`,
         'User-Agent': `remarkable-typescript/${pkgVersion}`,
@@ -138,7 +138,7 @@ export default class Remarkable {
 
     // Make request
     return got
-      .post('https://my.remarkable.com/token/json/2/device/new', {
+      .post('https://webapp-production-dot-remarkable-production.appspot.com/token/json/2/device/new', {
         json: { code, deviceDesc, deviceId },
       })
       .then(async ({ body }) => {
