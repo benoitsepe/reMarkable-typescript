@@ -23,6 +23,9 @@ const defaultPDFContent = {
   pageCount: 0,
   textScale: 1,
   transform: {},
+  pages: [
+    "",
+  ],
 };
 
 const defaultEPUBContent = {
