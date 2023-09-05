@@ -64,6 +64,7 @@ export default class Remarkable {
   private storageUrl?: string;
   private notificationUrl?: string;
   private zip: JSZip;
+  private authUrl = "https://webapp-prod.cloud.remarkable.engineering";
 
   constructor({ deviceToken }: Props = {}) {
     if (deviceToken) {
@@ -86,7 +87,7 @@ export default class Remarkable {
 
   public async refreshToken(): Promise<string> {
     if (!this.deviceToken) throw new Error('You must register your reMarkable first');
-    const { body } = await got.post<string>('https://webapp-production-dot-remarkable-production.appspot.com/token/json/2/user/new', {
+    const { body } = await got.post<string>(`${this.authUrl}/token/json/2/user/new`, {
       headers: {
         Authorization: `Bearer ${this.deviceToken}`,
         'User-Agent': `remarkable-typescript/${pkgVersion}`,
@@ -141,7 +142,7 @@ export default class Remarkable {
 
     // Make request
     return got
-      .post('https://webapp-production-dot-remarkable-production.appspot.com/token/json/2/device/new', {
+      .post(`${this.authUrl}/token/json/2/device/new`, {
         json: { code, deviceDesc, deviceId },
       })
       .then(async ({ body }) => {
